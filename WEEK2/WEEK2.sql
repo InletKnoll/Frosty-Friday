@@ -57,17 +57,17 @@ COPY INTO EMPLOYEES FROM @INTERNAL_STAGE/employees.parquet MATCH_BY_COLUMN_NAME 
 
 SELECT * FROM EMPLOYEES;
 
-//特定列のみ変更をキャプチャをしたい場合はVIEWを経由すれば良い。
+-- 特定列のみ変更をキャプチャをしたい場合はVIEWを経由すれば良い。
 -- employee_idはキャプチャ対象ではないが、これを入れていないと後でSTREAMを見てもどのレコードが変更されたかわからないので含める
-//元となるテーブルで列名が小文字になっているので、ダブルクォートで囲う必要あり
+-- 元となるテーブルで列名が小文字になっているので、ダブルクォートで囲う必要あり
 CREATE VIEW EMPLOYEES_VIEW 
 AS SELECT "employee_id", "dept", "job_title" FROM EMPLOYEES;
 
 
-//VIEWに対してストリームを作成する
+-- VIEWに対してストリームを作成する
 CREATE STREAM EMPLOYESS_CHANGE ON VIEW EMPLOYEES_VIEW;
 
-//データの更新
+-- データの更新
 UPDATE EMPLOYEES SET "country" = 'Japan' WHERE "employee_id" = 8;
 UPDATE EMPLOYEES SET "last_name" = 'Forester' WHERE "employee_id" = 22;
 UPDATE EMPLOYEES SET "dept" = 'Marketing' WHERE "employee_id" = 25;
