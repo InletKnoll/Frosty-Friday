@@ -1,0 +1,83 @@
+-- https://docs.snowflake.com/ja/user-guide/tag-based-masking-policies
+
+USE ROLE SYSADMIN;
+
+-- 週番号を変数として設定
+SET WEEK_NUMBER = 9;
+
+-- 動的にデータベースとスキーマを作成
+SET DB_NAME = 'DB_WEEK' || $WEEK_NUMBER;
+SET SCHEMA_NAME = $DB_NAME || '.SCHEMA_WEEK' || $WEEK_NUMBER;
+
+BEGIN
+-- データベース作成
+EXECUTE IMMEDIATE 'CREATE DATABASE ' || $DB_NAME;
+
+-- スキーマ作成
+EXECUTE IMMEDIATE 'CREATE SCHEMA ' || $SCHEMA_NAME;
+
+-- スキーマをUSE
+EXECUTE IMMEDIATE 'USE SCHEMA ' || $SCHEMA_NAME;
+END;
+
+-- setup code
+--CREATE DATA
+CREATE OR REPLACE TABLE data_to_be_masked(first_name varchar, last_name varchar,hero_name varchar);
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Eveleen', 'Danzelman','The Quiet Antman');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Harlie', 'Filipowicz','The Yellow Vulture');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Mozes', 'McWhin','The Broken Shaman');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Horatio', 'Hamshere','The Quiet Charmer');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Julianna', 'Pellington','Professor Ancient Spectacle');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Grenville', 'Southouse','Fire Wonder');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Analise', 'Beards','Purple Fighter');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Darnell', 'Bims','Mister Majestic Mothman');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Micky', 'Shillan','Switcher');
+INSERT INTO data_to_be_masked (first_name, last_name, hero_name) VALUES ('Ware', 'Ledstone','Optimo');
+
+--CREATE ROLE
+CREATE ROLE foo1;
+CREATE ROLE foo2;
+GRANT ROLE foo1 TO USER hiroki;
+GRANT ROLE foo2 TO USER hiroki;
+
+GRANT USAGE ON DATABASE DB_WEEK9 TO ROLE foo1;
+GRANT USAGE ON DATABASE DB_WEEK9 TO ROLE foo2;
+
+GRANT USAGE ON SCHEMA DB_WEEK9.SCHEMA_WEEK9 TO ROLE foo1;
+GRANT USAGE ON SCHEMA DB_WEEK9.SCHEMA_WEEK9 TO ROLE foo2;
+GRANT SELECT ON TABLE DB_WEEK9.SCHEMA_WEEK9.DATA_TO_BE_MASKED TO ROLE foo1;
+GRANT SELECT ON TABLE DB_WEEK9.SCHEMA_WEEK9.DATA_TO_BE_MASKED TO ROLE foo2;
+GRANT USAGE ON WAREHOUSE COMPUTE_WH TO ROLE foo1;
+GRANT USAGE ON WAREHOUSE COMPUTE_WH TO ROLE foo2;
+
+-- 大文字で指定する
+CREATE OR REPLACE MASKING POLICY first_name_mask AS (val string) returns string ->
+  CASE
+    WHEN current_role() IN ('FOO1') THEN VAL
+    WHEN current_role() IN ('FOO2') THEN VAL
+    ELSE '*********'
+  END;
+
+CREATE OR REPLACE MASKING POLICY last_name_mask AS (val string) returns string ->
+  CASE
+    WHEN current_role() IN ('FOO2') THEN VAL
+    ELSE '*********'
+  END;
+
+ALTER TABLE IF EXISTS data_to_be_masked MODIFY COLUMN first_name SET MASKING POLICY first_name_mask;
+ALTER TABLE IF EXISTS data_to_be_masked MODIFY COLUMN last_name SET MASKING POLICY last_name_mask;
+
+-- ALTER TABLE IF EXISTS data_to_be_masked MODIFY COLUMN first_name UNSET MASKING POLICY;
+-- ALTER TABLE IF EXISTS data_to_be_masked MODIFY COLUMN last_name UNSET MASKING POLICY;
+
+-- check
+USE ROLE ACCOUNTADMIN;
+SELECT * FROM data_to_be_masked;
+
+-- check
+USE ROLE foo1;
+SELECT * FROM data_to_be_masked;
+
+-- check
+USE ROLE foo2;
+SELECT * FROM data_to_be_masked;
