@@ -71,7 +71,7 @@ CREATE OR REPLACE MASKING POLICY level_tag_mask AS (val string) returns string -
     ELSE repeat('*', 6)
   END;
 
--- タグに対するマスキングポリシーの割り当ておよび置き換えには、APPLY MASKING POLICY グローバル権限が必要です。
+-- タグに対するマスキングポリシーの割り当ておよび置き換えには、APPLY MASKING POLICY グローバル権限が必要。
 USE ROLE ACCOUNTADMIN;
 alter tag level_tag set masking policy level_tag_mask;
 
