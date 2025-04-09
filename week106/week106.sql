@@ -19,10 +19,7 @@ EXECUTE IMMEDIATE 'CREATE SCHEMA ' || $SCHEMA_NAME;
 EXECUTE IMMEDIATE 'USE SCHEMA ' || $SCHEMA_NAME;
 END;
 
--- setup code
-CREATE DATABASE dynamic_data_masking_db;
-USE DATABASE dynamic_data_masking_db;
-
+-- -- setup code
 CREATE TABLE customer_data (
     customer_id INTEGER,
     name STRING,
