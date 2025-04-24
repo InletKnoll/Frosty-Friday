@@ -20,6 +20,8 @@ EXECUTE IMMEDIATE 'CREATE SCHEMA ' || $SCHEMA_NAME;
 EXECUTE IMMEDIATE 'USE SCHEMA ' || $SCHEMA_NAME;
 END;
 
+USE SCHEMA DB_WEEK9.SCHEMA_WEEK9;
+
 -- setup code
 --CREATE DATA
 CREATE OR REPLACE TABLE data_to_be_masked(first_name varchar, last_name varchar,hero_name varchar);
