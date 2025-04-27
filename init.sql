@@ -3,8 +3,8 @@ GRANT USAGE ON WAREHOUSE COMPUTE_WH TO ROLE SYSADMIN;
 GRANT USAGE ON WAREHOUSE COMPUTE_WH TO ROLE SYSADMIN;
 
 -- セカンダリロールを無効化
-CREATE DATABASE CONFIG;
-CREATE SCHEMA WORK;
+CREATE OR REPLACE DATABASE CONFIG;
+CREATE OR REPLACE SCHEMA WORK;
 
 CREATE OR REPLACE PROCEDURE update_default_secondary_roles_for_all()
 RETURNS VARIANT NOT NULL
@@ -38,7 +38,7 @@ $$;
 USE ROLE ACCOUNTADMIN; 
 CALL update_default_secondary_roles_for_all();
 
--- check
+-- check(vscodeから実行する場合はまとめて実行する。一つずつ実行するとセッションが変わるので、正しくlast_queryが取得できない)
 show users;
 SELECT "name", "default_secondary_roles"
 FROM TABLE(result_scan(last_query_id()));
