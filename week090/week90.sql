@@ -55,6 +55,7 @@ table week_90_f;
 -- Train your model(2分くらいかかる)
 CREATE SNOWFLAKE.ML.FORECAST my_model(
   INPUT_DATA => TABLE(week_90),
+  SERIES_COLNAME => 'PRODUCT_ID',
   TIMESTAMP_COLNAME => 'SALE_DATE',
   TARGET_COLNAME => 'QUANTITY_SOLD'
 );
