@@ -1,0 +1,67 @@
+-- https://frostyfriday.org/blog/2024/04/19/week-90-intermediate/
+-- https://docs.snowflake.com/ja/user-guide/ml-functions/forecasting
+
+USE ROLE SYSADMIN;
+
+-- 週番号を変数として設定
+SET WEEK_NUMBER =90;
+
+-- 動的にデータベースとスキーマを作成
+SET DB_NAME = 'DB_WEEK' || $WEEK_NUMBER;
+SET SCHEMA_NAME = $DB_NAME || '.SCHEMA_WEEK' || $WEEK_NUMBER;
+
+BEGIN
+-- データベース作成
+EXECUTE IMMEDIATE 'CREATE DATABASE ' || $DB_NAME;
+
+-- スキーマ作成
+EXECUTE IMMEDIATE 'CREATE SCHEMA ' || $SCHEMA_NAME;
+
+-- スキーマをUSE
+EXECUTE IMMEDIATE 'USE SCHEMA ' || $SCHEMA_NAME;
+END;
+
+-- startup
+CREATE STAGE IF NOT EXISTS frosty_aws_stage
+  URL = 's3://frostyfridaychallenges/';
+
+CREATE OR REPLACE TABLE WEEK_90 AS 
+SELECT 
+    $1::TIMESTAMP_NTZ AS SALE_DATE, 
+    $2::INT AS PRODUCT_ID,
+    $3::INT AS QUANTITY_SOLD,
+    $4::INT AS UNIT_PRICE,
+    $5/100::FLOAT AS TAX_PCT,
+    $6/100::FLOAT AS DCT_PCT
+FROM @FROSTY_AWS_STAGE/challenge_90
+WHERE $1 != 'Date';
+
+CREATE OR REPLACE TABLE WEEK_90_F LIKE WEEK_90;
+ALTER TABLE WEEK_90_F DROP COLUMN QUANTITY_SOLD;
+
+INSERT INTO WEEK_90_F VALUES 
+(TO_TIMESTAMP_NTZ('2023-10-29'), 1000, 450, 0.1, 0.02),
+(TO_TIMESTAMP_NTZ('2023-10-29'), 1001, 150, 0.15, 0.02),
+(TO_TIMESTAMP_NTZ('2023-10-29'), 1002, 100, 0.13, 0.18),
+(TO_TIMESTAMP_NTZ('2023-10-29'), 1003, 170, 0.11, 0.03),
+(TO_TIMESTAMP_NTZ('2023-10-29'), 1004, 300, 0.04, 0.03);
+
+-- check
+table week_90;
+
+table week_90_f;
+
+
+-- Train your model(2分くらいかかる)
+CREATE SNOWFLAKE.ML.FORECAST my_model(
+  INPUT_DATA => TABLE(week_90),
+  TIMESTAMP_COLNAME => 'SALE_DATE',
+  TARGET_COLNAME => 'QUANTITY_SOLD'
+);
+
+-- Generate forecasts using your model
+CALL my_model!FORECAST(
+  INPUT_DATA => TABLE(WEEK_90_F),
+  SERIES_COLNAME => 'PRODUCT_ID',
+  TIMESTAMP_COLNAME =>'SALE_DATE'
+);
