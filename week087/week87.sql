@@ -36,7 +36,7 @@ table week_87;
 -- 各言語コードに対して 'Happy Easter' を翻訳したい
 select
   f.value as language_code,
-  snowflake.cortex.translate(greeting, 'en', f.value)
+  snowflake.cortex.translate(greeting, 'en', f.value) as translated_greeting
 from
   week_87,
   lateral flatten(input => language_codes) f;
